@@ -1,9 +1,9 @@
 """
 Autonomous autoresearch agent loop for ocean network.
 
-Runs inside a Docker container on a 2×H200 GPU node.
-GPU 0: dedicated to the agent LLM (Qwen3.5-27B via vLLM, unquantized bf16)
-GPU 1: dedicated to training (full 141GB VRAM)
+Runs inside a Docker container on a remote GPU node.
+Uses a local open-source LLM (Qwen3-32B-AWQ via vLLM) to iteratively
+improve train.py, measuring val_bpb as the optimization target.
 """
 
 import json
@@ -15,22 +15,14 @@ import time
 from datetime import datetime, timezone
 
 # ---------------------------------------------------------------------------
-# GPU isolation — must be set before any CUDA imports
-# ---------------------------------------------------------------------------
-
-AGENT_GPU = "0"
-TRAINING_GPU = "1"
-os.environ["CUDA_VISIBLE_DEVICES"] = AGENT_GPU  # vLLM only sees GPU 0
-
-# ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
 
-AGENT_MODEL = "Qwen/Qwen3.5-27B"
-GPU_MEMORY_UTILIZATION = 0.90  # dedicated GPU — use most of it
+AGENT_MODEL = "Qwen/Qwen3-32B-AWQ"
+GPU_MEMORY_UTILIZATION = 0.25  # ~35GB for weights+KV cache, rest for training
 MAX_ITERATIONS = 200
 TRAINING_TIMEOUT = 600  # 10 minutes
-MAX_MODEL_LEN = 65536   # larger context — dedicated GPU has plenty of room
+MAX_MODEL_LEN = 40960   # total context window (input + output)
 MAX_OUTPUT_TOKENS = 16384  # max tokens for LLM output (enough for full train.py)
 TEMPERATURE = 0.7
 STAGNATION_THRESHOLD = 5  # consecutive non-improvements before nudge
@@ -146,10 +138,6 @@ def run_training(train_py_content):
     """
     write_file(TRAIN_PY_PATH, train_py_content)
 
-    # Run training on the dedicated training GPU
-    train_env = os.environ.copy()
-    train_env["CUDA_VISIBLE_DEVICES"] = TRAINING_GPU
-
     try:
         result = subprocess.run(
             [sys.executable, TRAIN_PY_PATH],
@@ -157,7 +145,6 @@ def run_training(train_py_content):
             text=True,
             timeout=TRAINING_TIMEOUT,
             cwd="/app",
-            env=train_env,
         )
     except subprocess.TimeoutExpired as e:
         stderr_text = e.stderr if isinstance(e.stderr, str) else (e.stderr.decode() if e.stderr else "")
@@ -432,7 +419,6 @@ def main():
         max_model_len=MAX_MODEL_LEN,
         dtype="auto",
         trust_remote_code=True,
-        enforce_eager=True,  # avoid DeltaNet compilation issues with Qwen3.5
     )
     sampling_params = SamplingParams(
         max_tokens=MAX_OUTPUT_TOKENS,

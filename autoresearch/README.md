@@ -2,13 +2,26 @@
 
 Autonomous ML research agent that iteratively improves a GPT pretraining script to minimize validation bits-per-byte (val_bpb). Inspired by [Karpathy's autoresearch](https://github.com/karpathy/autoresearch).
 
-The key difference: everything runs **inside a single Docker container** on an [Ocean](https://dashboard.oncompute.ai/) GPU node (H200, 141GB VRAM) with a **local open-source LLM** — no API keys needed.
+The key difference: everything runs **inside a single Docker container** on [Ocean](https://dashboard.oncompute.ai/) GPU nodes with a **local open-source LLM** — no API keys needed. The current setup uses 2×H200 GPUs: one dedicated to the agent LLM, the other to training.
+
+## From Karpathy's Experiment to Ocean
+
+Karpathy's [autoresearch](https://github.com/karpathy/autoresearch) uses the Claude API to drive the agent loop. We adapted it to run fully self-contained on Ocean Network:
+
+1. **Local LLM instead of API** — Replaced Claude API calls with **Qwen3.5-27B** served via **vLLM** (unquantized bf16, ~54GB). No API keys, no per-token costs.
+2. **Dedicated GPUs** — GPU 0 runs the agent LLM, GPU 1 runs training. Each gets the full 141GB — no memory-sharing complexity. (A single-GPU variant using Qwen3-32B-AWQ is available as `algo_qwen3-32B.py`.)
+3. **Single Docker container** — Everything packaged in one container: PyTorch, vLLM, Flash Attention 3, data pipeline. Ocean runs it on remote GPU nodes via a symlink to `/app/data/transformations/algorithm`.
+4. **Self-bootstrapping data** — `prepare.py` downloads HuggingFace data shards and trains a BPE tokenizer at container startup, so nothing needs to persist between runs.
+
+> **Alternative**: You can also use the Claude API (or any LLM API) from inside the container by passing an API key as an environment variable. Stronger model, but adds cost and network dependency.
+
+A few clicks give you an autonomous ML researcher that runs for hours on H200 GPUs, costs nothing beyond the compute rental, and produces a `results.json` with the full experiment history and winning code.
 
 ## How It Works
 
 1. **Data prep** — Downloads HuggingFace data shards, trains a BPE tokenizer (`prepare.py`)
-2. **Load agent LLM** — Qwen3-32B-AWQ via vLLM (~18GB VRAM, stays resident)
-3. **Baseline run** — Runs the original `train.py` (5-min training budget), records val_bpb
+2. **Load agent LLM** — Qwen3.5-27B via vLLM on GPU 0 (~54GB VRAM, stays resident)
+3. **Baseline run** — Runs the original `train.py` on GPU 1 (5-min training budget), records val_bpb
 4. **Agent loop** (up to 200 iterations):
    - LLM reads experiment history + current best `train.py`
    - Generates a hypothesis + complete new `train.py`
@@ -22,7 +35,8 @@ The user extracts `results["best"]["train_py"]` to get the winning code.
 
 | File | Description |
 |------|-------------|
-| `algo.py` | Core agent loop — orchestrates LLM inference and training |
+| `algo.py` | Core agent loop — orchestrates LLM inference (GPU 0) and training (GPU 1) |
+| `algo_qwen3-32B.py` | Previous single-GPU variant using Qwen3-32B-AWQ |
 | `train.py` | GPT pretraining script (the file the agent modifies) |
 | `prepare.py` | Data download, tokenizer, dataloader, evaluation (read-only) |
 | `program.md` | Instructions for the agent LLM |
@@ -32,7 +46,7 @@ The user extracts `results["best"]["train_py"]` to get the winning code.
 ## Usage
 
 1. Go to [dashboard.oncompute.ai](https://dashboard.oncompute.ai/)
-2. Select an **H200 GPU** environment
+2. Select a **2×H200 GPU** environment (or single H200 with `algo_qwen3-32B.py`)
 3. Configure the job and add payment
 4. Open the **Ocean Orchestrator** in VS Code / your editor
 5. Open this directory in the orchestrator and run the job — the container builds and executes `algo.py` autonomously
@@ -44,6 +58,8 @@ python plot_progress.py path/to/results.json progress.png
 ```
 
 ## Results
+
+All results below are from the single-GPU setup (Qwen3-32B-AWQ on one H200). Results with the 2×H200 / Qwen3.5-27B setup are pending.
 
 ### Qwen3-32B-AWQ — 0.7 Temperature (First Run)
 
