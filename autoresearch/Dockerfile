@@ -19,7 +19,7 @@ RUN uv pip install --system --no-cache-dir \
     torch==2.9.1 --index-url https://download.pytorch.org/whl/cu128
 
 RUN uv pip install --system --no-cache-dir \
-    vllm \
+    "vllm>=0.17.0" \
     kernels>=0.11.7 \
     rustbpe>=0.1.0 \
     tiktoken>=0.11.0 \

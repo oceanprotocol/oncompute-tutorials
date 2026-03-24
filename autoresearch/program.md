@@ -41,7 +41,7 @@ Do NOT forget any imports. Do NOT leave out the `dataclass` or `asdict` imports.
 
 ## Constraints
 
-- **VRAM** is a soft constraint. The baseline uses ~44GB. You can use up to ~100GB for meaningful val_bpb gains (the H200 has 141GB, but ~40GB is reserved for the agent LLM).
+- **VRAM** is a soft constraint. The baseline uses ~44GB. You can use up to ~130GB for meaningful val_bpb gains (the training GPU is a dedicated H200 with 141GB).
 - **Simplicity criterion**: All else being equal, simpler is better. But prioritize val_bpb improvements over simplicity.
 
 ## Research Directions to Explore
