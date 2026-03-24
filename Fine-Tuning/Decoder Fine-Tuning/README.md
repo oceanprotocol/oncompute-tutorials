@@ -27,15 +27,15 @@ Self-attention is a mechanism that enables each token in a sequence to compute a
 
 Given an input sequence represented as embeddings:
 
-$
+$$
 X = [x_1, x_2, \dots, x_n] \in \mathbb{R}^{n \times d}
-$
+$$
 
 Three linear projections are applied:
 
-$
+$$
 Q = XW^Q, \quad K = XW^K, \quad V = XW^V
-$
+$$
 
 where:
 
@@ -45,11 +45,11 @@ where:
 
 The attention mechanism computes:
 
-$
+$$
 \text{Attention}(Q,K,V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V
-$
+$$
 
-* ($QK^T$) computes similarity scores.
+* $QK^T$ computes similarity scores.
 * Division by $\sqrt{d_k}$ stabilizes gradients.
 * The softmax produces attention weights.
 * These weights are used to compute a weighted sum of value vectors.
@@ -99,9 +99,9 @@ x4  →  [ •    •    •    • ]
 
 The upper-triangular portion is masked (set to $-\infty$ before softmax), ensuring:
 
-$
+$$
 x_t \text{ attends only to } x_{\leq t}
-$
+$$
 
 This produces an autoregressive model suitable for text generation.
 
@@ -114,21 +114,21 @@ A single attention operation may not capture all relevant relational patterns in
 
 Instead of a single set of projections $(W^Q, W^K, W^V)$, we define (h) sets:
 
-$
+$$
 Q_i = XW_i^Q, \quad K_i = XW_i^K, \quad V_i = XW_i^V
-$
+$$
 
 Each head computes:
 
-$
+$$
 \text{head}_i = \text{Attention}(Q_i, K_i, V_i)
-$
+$$
 
 The outputs are concatenated:
 
-$
+$$
 \text{MultiHead}(Q,K,V) = \text{Concat}(\text{head}_1, \dots, \text{head}_h)W^O
-$
+$$
 
 where $W^O$ is a learned projection matrix.
 
@@ -160,9 +160,9 @@ Each head may learn to specialize in distinct types of relationships (e.g., synt
 
 The training objective of a decoder-only transformer can be formulated as a sequence of classification tasks. At each position $t$, given the previous tokens $x_{<t} = (x_1, \dots, x_{t-1})$, the model predicts a probability distribution over the entire vocabulary $\mathcal{V}$:
 
-$
+$$
 P(x_t \mid x_{<t})
-$
+$$
 
 Since the vocabulary contains $|\mathcal{V}|$ discrete tokens, this prediction corresponds to a **multi-class classification problem**, where:
 
@@ -188,15 +188,15 @@ Training aims to minimize the **cross-entropy loss** between the predicted distr
 
 For a single position $t$, the loss is:
 
-$
-\mathcal{L}*t = - \log P*\theta(x_t \mid x_{<t})
-$
+$$
+\mathcal{L}_t = - \log P_\theta(x_t \mid x_{<t})
+$$
 
-For a sequence of length $ T $:
+For a sequence of length $T$:
 
-$
+$$
 \mathcal{L} = - \sum_{t=1}^{T} \log P_\theta(x_t \mid x_{<t})
-$
+$$
 
 This is equivalent to maximizing the likelihood of the training data (Maximum Likelihood Estimation).
 
@@ -216,7 +216,7 @@ Conceptually:
 * Input to predict token 3 is tokens 1–2.
 * And so forth.
 
-Although the full sequence is fed into the model in parallel, causal masking ensures that position $ t $ only attends to positions $ < t $.
+Although the full sequence is fed into the model in parallel, causal masking ensures that position $t$ only attends to positions $<t$.
 
 ---
 
@@ -237,20 +237,20 @@ Example:
 
 **Input tokens:**
 
-$
+$$
 [tok_1, tok_2, \dots, tok_n, tok_{n+1}, \dots, tok_T]
-$
+$$
 
 where:
 
-* $ tok_1 \dots tok_n $ = prompt
-* $ tok_{n+1} \dots tok_T $ = target completion
+* $tok_1 \dots tok_n$ = prompt
+* $tok_{n+1} \dots tok_T$ = target completion
 
 **Labels:**
 
-$
+$$
 [-100, -100, \dots, -100, tok_{n+1}, \dots, tok_T]
-$
+$$
 
 Here:
 
@@ -259,9 +259,9 @@ Here:
 
 Thus, the loss becomes:
 
-$
+$$
 \mathcal{L} = - \sum_{t=n+1}^{T} \log P_\theta(x_t \mid x_{<t})
-$
+$$
 
 The model still *conditions on the prompt*, but it is only penalized for errors in generating the response.
 

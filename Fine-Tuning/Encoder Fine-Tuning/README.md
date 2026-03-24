@@ -30,33 +30,33 @@ Unlike decoder-only transformers, which are almost always trained with next-toke
 An encoder-only transformer can be viewed as a **general-purpose feature extractor** that produces contextualized token representations. On top of this shared backbone, different **task-specific heads** can be attached.
 
 Given an input sequence
-$
+$$
 x = (x_1, \dots, x_T),
-$
+$$
 the encoder produces hidden states:
 
-$
+$$
 H = (h_1, \dots, h_T).
-$
+$$
 
 These representations can then be fed into one or more classification heads, depending on the task.
 
 #### (a) Sequence-Level Classification
 
-A special token (e.g., [CLS]) is prepended to the sequence. Its final hidden representation $ h_{\text{CLS}} $ serves as an aggregate summary of the input.  This representation can then be fed into a classification head. Alternatively, instead of relying solely on the `[CLS]` token, one may construct the input to the classification head using a learned linear combination (or pooling) of all token representations in the final layer.
+A special token (e.g., [CLS]) is prepended to the sequence. Its final hidden representation $h_{\text{CLS}}$ serves as an aggregate summary of the input. This representation can then be fed into a classification head. Alternatively, instead of relying solely on the `[CLS]` token, one may construct the input to the classification head using a learned linear combination (or pooling) of all token representations in the final layer.
 
 
 A classification head (typically a linear layer + softmax) predicts:
 
-$
+$$
 P_\theta(y \mid x)
-$
+$$
 
 The loss is standard cross-entropy:
 
-$
+$$
 \mathcal{L} = - \log P_\theta(y \mid x)
-$
+$$
 
 This setup is used for tasks such as sentiment analysis, topic classification, or natural language inference.
 
@@ -64,29 +64,27 @@ This setup is used for tasks such as sentiment analysis, topic classification, o
 #### (b) Token-Level Classification
 
 For tasks like named entity recognition or part-of-speech tagging, a classification head is applied **independently to each token representation**:
-
-$
+$$
 P_\theta(y_t \mid x)
-$
+$$
 
 The total loss becomes:
 
-$
+$$
 \mathcal{L} = - \sum_{t=1}^{T} \log P_\theta(y_t \mid x)
-$
+$$
 
 #### (c) Multi-Task Learning with Multiple Heads
 
 A single encoder backbone can simultaneously support multiple objectives by attaching **multiple classification heads**, each with its own loss:
-
-$
+$$
 \mathcal{L} = \sum_i \lambda_i \mathcal{L}_i
-$
+$$
 
 where:
 
-* $ \mathcal{L}_i $ is the loss for task $ i $,
-* $ \lambda_i $ controls the relative importance of each task.
+* $\mathcal{L}_i$ is the loss for task $i$,
+* $\lambda_i$ controls the relative importance of each task.
 
 In this setting, the encoder learns shared representations that transfer across tasks, while each head specializes in a particular prediction problem.
 
@@ -107,16 +105,15 @@ Instead of adding extra classificatiomn heads over the transformer backbone, we 
 > "Question: How many planets are in our solar system? Answer: [MASK] planets."
 
 The encoder processes the entire sequence simultaneously, attending to both the question and the unmasked parts of the answer. The objective is to predict:
-
-$
+$$
 P(x_t \mid x_{\setminus \mathcal{M}}), \quad t \in \mathcal{M}
-$
+$$
 
 The loss is computed only on the masked answer tokens:
 
-$
+$$
 \mathcal{L} = - \sum_{t \in \mathcal{M}} \log P_\theta(x_t \mid x_{\setminus \mathcal{M}})
-$
+$$
 
 In this formulation:
 
