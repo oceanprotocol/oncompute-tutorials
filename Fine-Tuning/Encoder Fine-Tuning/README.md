@@ -29,11 +29,7 @@ Unlike decoder-only transformers, which are almost always trained with next-toke
 
 An encoder-only transformer can be viewed as a **general-purpose feature extractor** that produces contextualized token representations. On top of this shared backbone, different **task-specific heads** can be attached.
 
-Given an input sequence
-$$
-x = (x_1, \dots, x_T),
-$$
-the encoder produces hidden states:
+Given an input sequence $x = (x_1, \dots, x_T)$, the encoder produces hidden states:
 
 $$
 H = (h_1, \dots, h_T).
@@ -64,6 +60,7 @@ This setup is used for tasks such as sentiment analysis, topic classification, o
 #### (b) Token-Level Classification
 
 For tasks like named entity recognition or part-of-speech tagging, a classification head is applied **independently to each token representation**:
+
 $$
 P_\theta(y_t \mid x)
 $$
@@ -77,6 +74,7 @@ $$
 #### (c) Multi-Task Learning with Multiple Heads
 
 A single encoder backbone can simultaneously support multiple objectives by attaching **multiple classification heads**, each with its own loss:
+
 $$
 \mathcal{L} = \sum_i \lambda_i \mathcal{L}_i
 $$
@@ -105,6 +103,7 @@ Instead of adding extra classificatiomn heads over the transformer backbone, we 
 > "Question: How many planets are in our solar system? Answer: [MASK] planets."
 
 The encoder processes the entire sequence simultaneously, attending to both the question and the unmasked parts of the answer. The objective is to predict:
+
 $$
 P(x_t \mid x_{\setminus \mathcal{M}}), \quad t \in \mathcal{M}
 $$

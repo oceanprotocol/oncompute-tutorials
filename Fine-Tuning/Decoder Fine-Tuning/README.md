@@ -158,10 +158,10 @@ Each head may learn to specialize in distinct types of relationships (e.g., synt
 
 ### 1. Next-Token Prediction as a Classification Problem
 
-The training objective of a decoder-only transformer can be formulated as a sequence of classification tasks. At each position $t$, given the previous tokens $x_{<t} = (x_1, \dots, x_{t-1})$, the model predicts a probability distribution over the entire vocabulary $\mathcal{V}$:
+The training objective of a decoder-only transformer can be formulated as a sequence of classification tasks. At each position $t$, given the previous tokens $(x_1, \dots, x_{t-1})$, the model predicts a probability distribution over the entire vocabulary $\mathcal{V}$:
 
 $$
-P(x_t \mid x_{<t})
+P(x_t \mid x_1, \dots, x_{t-1})
 $$
 
 Since the vocabulary contains $|\mathcal{V}|$ discrete tokens, this prediction corresponds to a **multi-class classification problem**, where:
@@ -189,13 +189,13 @@ Training aims to minimize the **cross-entropy loss** between the predicted distr
 For a single position $t$, the loss is:
 
 $$
-\mathcal{L}_t = - \log P_\theta(x_t \mid x_{<t})
+\mathcal{L}_t = - \log P_\theta(x_t \mid x_1, \dots, x_{t-1})
 $$
 
 For a sequence of length $T$:
 
 $$
-\mathcal{L} = - \sum_{t=1}^{T} \log P_\theta(x_t \mid x_{<t})
+\mathcal{L} = - \sum_{t=1}^{T} \log P_\theta(x_t \mid x_1, \dots, x_{t-1})
 $$
 
 This is equivalent to maximizing the likelihood of the training data (Maximum Likelihood Estimation).
@@ -260,7 +260,7 @@ Here:
 Thus, the loss becomes:
 
 $$
-\mathcal{L} = - \sum_{t=n+1}^{T} \log P_\theta(x_t \mid x_{<t})
+\mathcal{L} = - \sum_{t=n+1}^{T} \log P_\theta(x_t \mid x_1, \dots, x_{t-1})
 $$
 
 The model still *conditions on the prompt*, but it is only penalized for errors in generating the response.
