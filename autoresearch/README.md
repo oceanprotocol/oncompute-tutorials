@@ -4,6 +4,38 @@ Autonomous ML research agent that iteratively improves a GPT pretraining script 
 
 The key difference: everything runs **inside a single Docker container** on an [Ocean](https://dashboard.oncompute.ai/) GPU node (H200, 141GB VRAM) with a **local open-source LLM** — no API keys needed.
 
+## From Karpathy's Experiment to Ocean
+
+Karpathy's [autoresearch](https://github.com/karpathy/autoresearch) uses the Claude API to drive an agent loop that iteratively improves a GPT training script. It's a brilliant idea — let an LLM be the researcher — but it requires API keys, costs money per token, and runs on your own machine. Here's how we adapted it to run fully self-contained on Ocean Network:
+
+### 1. Replace the API with a local LLM
+
+The original calls Claude via the Anthropic API. We replaced that with **Qwen3-32B-AWQ** served locally through **vLLM**. The AWQ 4-bit quantization brings the model down to ~18GB VRAM, leaving the rest of the H200's 141GB for training. vLLM loads once and stays resident for all 200 iterations — no network calls, no API keys, no per-token costs.
+
+### 2. Share one GPU between the agent and training
+
+This is the core engineering challenge. The agent LLM and the training run need to coexist on the same GPU. We configure vLLM with `gpu_memory_utilization=0.25` (~35GB for weights + KV cache), leaving ~100GB for PyTorch training. The agent generates code, then training runs as a subprocess — they never compete for memory simultaneously because inference finishes before training starts.
+
+### 3. Package everything in a single Docker container
+
+Ocean's compute-to-data model runs a Docker container on a remote GPU node. We built a container on `nvidia/cuda:12.8.0-devel-ubuntu22.04` that includes PyTorch, vLLM, Flash Attention 3 (via `kernels`), and all dependencies. The entire pipeline — data download, tokenizer training, LLM loading, and the 200-iteration research loop — runs from a single entrypoint (`algo.py`).
+
+### 4. Adapt the data pipeline for container execution
+
+Karpathy's setup assumes a persistent local environment. In a container, nothing persists between runs. `prepare.py` handles this by downloading HuggingFace data shards and training a BPE tokenizer from scratch at container startup, caching everything under `~/.cache/autoresearch/` for the duration of the job.
+
+### 5. Wire into Ocean's orchestrator
+
+Ocean expects the algorithm at `/app/data/transformations/algorithm`. A symlink in the Dockerfile (`ln -sf /app/algo.py /app/data/transformations/algorithm`) bridges this. Results are written to `/data/outputs/results.json` so they're downloadable from the Ocean dashboard when the job completes.
+
+### Alternative: use an API instead of a local LLM
+
+You could also use the Claude API (or any other LLM API) from inside the container — just pass the API key as an environment variable and swap the vLLM calls for Anthropic SDK calls. This frees up the ~35GB reserved for the agent model, giving training the full GPU, and a stronger model like Claude Sonnet would likely produce fewer crashes and smarter changes. The tradeoff is API costs and a dependency on network access.
+
+### The result
+
+A few clicks give you an autonomous ML researcher that runs for hours on an H200 GPU, costs nothing beyond the compute rental, and produces a `results.json` with the full experiment history and winning code.
+
 ## How It Works
 
 1. **Data prep** — Downloads HuggingFace data shards, trains a BPE tokenizer (`prepare.py`)
