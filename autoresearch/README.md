@@ -45,11 +45,33 @@ python plot_progress.py path/to/results.json progress.png
 
 ## Results
 
-### Qwen3-32B-AWQ — First Run
+### Qwen3-32B-AWQ — 0.7 Temperature (First Run)
 
 ![Qwen3-32B first run](assets/images/qwen32B_first_run_progress.png)
 
 - **Baseline**: 1.0077 val_bpb
 - **Best**: 0.9818 val_bpb (2.6% improvement)
-- **201 iterations** over 5.5 hours, 30 successful runs (85% crash rate)
+- **201 iterations** over 5.5 hours, 29 successful runs (86% crash rate)
 - Key improvements: increased model depth (8→10 layers), late-stage hyperparameter tuning
+
+### Qwen3-32B-AWQ — 0.5 Temperature, 6 Hours
+
+![Qwen3-32B 0.5temp 6h](assets/images/qwen32B_6h_0.5temp_progress.png)
+
+- **Baseline**: 1.0227 val_bpb
+- **Best**: 1.0072 val_bpb (1.5% improvement)
+- **94 iterations** over 6 hours, 36 successful runs (62% crash rate)
+- Lower crash rate than 0.7 temp, but much less improvement — the agent converged early and plateaued
+
+### Qwen3-32B-AWQ — 0.5 Temperature, 12 Hours
+
+![Qwen3-32B 0.5temp 12h](assets/images/qwen32B_12h_0.5temp_progress.png)
+
+- **Baseline**: 1.0215 val_bpb
+- **Best**: 1.0074 val_bpb (1.4% improvement)
+- **201 iterations** over 12 hours, 52 successful runs (74% crash rate)
+- Double the runtime of the first run but worse results — the agent got stuck and couldn't escape the local minimum
+
+### Takeaway
+
+Lower temperature (0.5 vs 0.7) reduces the crash rate (62-74% vs 86%) but produces significantly worse results. The more "creative" 0.7 temperature generates more broken code, but the successful mutations are bolder and lead to real architectural improvements (e.g. deeper models). At 0.5 temp the agent plays it safe, converges early to ~1.007 val_bpb, and stalls — even with 12 hours of compute it can't match what 0.7 temp achieved in 5.5 hours.
