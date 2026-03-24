@@ -24,9 +24,10 @@ MAX_ITERATIONS = 200
 TRAINING_TIMEOUT = 600  # 10 minutes
 MAX_MODEL_LEN = 40960   # total context window (input + output)
 MAX_OUTPUT_TOKENS = 16384  # max tokens for LLM output (enough for full train.py)
-TEMPERATURE = 0.5
+TEMPERATURE = 0.7
 STAGNATION_THRESHOLD = 5  # consecutive non-improvements before nudge
 MAX_HISTORY_IN_PROMPT = 20  # only show last N iterations in prompt
+MAX_CONSECUTIVE_CRASHES = 3  # after N crashes with same pattern, force new direction
 
 RESULTS_PATH = "/app/results.json"
 RESULTS_OUTPUT_PATH = "/data/outputs/results.json"
@@ -189,6 +190,58 @@ def run_training(train_py_content):
     }
 
 
+def summarize_tried_directions(iterations):
+    """Summarize what has been tried to help the LLM avoid repeating itself."""
+    crashed_descs = []
+    successful_descs = []
+    for it in iterations:
+        desc = it.get("description", "")[:100]
+        if not desc or desc in ("baseline", "no description"):
+            continue
+        if it["status"] == "crash":
+            crashed_descs.append(desc)
+        elif it["status"] == "discard":
+            successful_descs.append(f"bpb={it['val_bpb']:.4f}: {desc}")
+
+    # Deduplicate similar crash descriptions (first 40 chars)
+    seen = set()
+    unique_crashes = []
+    for d in crashed_descs:
+        key = d[:40].lower()
+        if key not in seen:
+            seen.add(key)
+            unique_crashes.append(d)
+
+    summary = []
+    if unique_crashes:
+        summary.append("**Approaches that CRASHED** (do not repeat these):")
+        for d in unique_crashes[-10:]:  # last 10 unique crashes
+            summary.append(f"- {d}")
+    if successful_descs:
+        summary.append("\n**Approaches that ran but did NOT improve** (try something different):")
+        for d in successful_descs[-8:]:  # last 8
+            summary.append(f"- {d}")
+    return "\n".join(summary)
+
+
+def classify_error(error_text):
+    """Classify a runtime error to give the LLM actionable feedback."""
+    if not error_text:
+        return None
+    e = error_text.lower()
+    if "cuda out of memory" in e or "out of memory" in e or "oom" in e:
+        return "OOM"
+    if "timed out" in e or "timeout" in e:
+        return "TIMEOUT"
+    if "shape" in e or "size mismatch" in e or "dimension" in e:
+        return "SHAPE_MISMATCH"
+    if "import" in e or "no module" in e or "cannot import" in e:
+        return "IMPORT_ERROR"
+    if "nan" in e or "inf" in e:
+        return "NUMERICAL"
+    return "RUNTIME_ERROR"
+
+
 def build_prompt(program_md, prepare_py_summary, best_train_py, results,
                  last_error=None, consecutive_non_improvements=0):
     """Build the full prompt for the LLM.
@@ -241,20 +294,48 @@ def build_prompt(program_md, prepare_py_summary, best_train_py, results,
         best = results["best"]
         parts.append(f"**Current best**: iteration {best['iteration']}, val_bpb={best['val_bpb']:.6f}\n\n")
 
-    # Error from last iteration
+    # Summary of tried directions (helps avoid repetition)
+    if len(iterations) > 5:
+        tried_summary = summarize_tried_directions(iterations)
+        if tried_summary:
+            parts.append("## What Has Been Tried\n")
+            parts.append(tried_summary)
+            parts.append("\n\n")
+
+    # Error from last iteration (with classification)
     if last_error:
-        # Truncate error to avoid blowing up the prompt
+        error_type = classify_error(last_error)
         truncated_error = last_error[:500]
         parts.append("## Previous Iteration Error\n")
-        parts.append(f"The previous iteration failed:\n```\n{truncated_error}\n```\n")
-        parts.append("Please fix the issue or try a different approach.\n\n")
+        if error_type == "OOM":
+            parts.append("**Error type: OUT OF MEMORY.** Your model was too large. "
+                         "Reduce model size, batch size, or sequence length.\n")
+        elif error_type == "TIMEOUT":
+            parts.append("**Error type: TIMEOUT.** Training took too long. "
+                         "Reduce model size or batch size to fit within 5 minutes.\n")
+        elif error_type == "SHAPE_MISMATCH":
+            parts.append("**Error type: TENSOR SHAPE MISMATCH.** Check that dimensions are consistent "
+                         "across model config, attention heads, and embeddings.\n")
+        elif error_type == "IMPORT_ERROR":
+            parts.append("**Error type: IMPORT ERROR.** You used a module that doesn't exist. "
+                         "Only use imports from the baseline.\n")
+        elif error_type == "NUMERICAL":
+            parts.append("**Error type: NUMERICAL INSTABILITY (NaN/Inf).** "
+                         "Learning rate may be too high, or initialization is unstable.\n")
+        parts.append(f"```\n{truncated_error}\n```\n")
+        parts.append("Fix the issue or try a completely different approach.\n\n")
 
     # Stagnation nudge
     if consecutive_non_improvements >= STAGNATION_THRESHOLD:
         parts.append("## NOTE: Stagnation Detected\n")
         parts.append(f"The last {consecutive_non_improvements} iterations did not improve val_bpb. ")
-        parts.append("Try a significantly different hyperparameter configuration: ")
-        parts.append("different learning rates, batch size, depth, width, or warmdown ratio. ")
+        if consecutive_non_improvements >= STAGNATION_THRESHOLD * 2:
+            parts.append("You have been stuck for a LONG time. Make a BOLD change you haven't tried yet. ")
+            parts.append("Consider: very different model depth/width ratios, different batch sizes (2x or 0.5x), ")
+            parts.append("different warmdown ratios, or significantly different learning rates. ")
+        else:
+            parts.append("Try a significantly different hyperparameter configuration: ")
+            parts.append("different learning rates, batch size, depth, width, or warmdown ratio. ")
         parts.append("Do NOT try to simplify or remove architecture components — that always causes crashes. ")
         parts.append("Keep the same architecture but change the numbers.\n\n")
 
