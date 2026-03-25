@@ -31,9 +31,9 @@ GPU_MEMORY_UTILIZATION = 0.90  # dedicated GPU — use most of it
 MAX_ITERATIONS = 200
 TRAINING_TIMEOUT = 600  # 10 minutes
 MAX_MODEL_LEN = 65536   # larger context — dedicated GPU has plenty of room
-MAX_OUTPUT_TOKENS = 16384  # max tokens for LLM output (enough for full train.py)
+MAX_OUTPUT_TOKENS = 4096   # train.py is ~2K tokens; 4K is plenty and keeps generation fast
 TEMPERATURE = 0.7
-STAGNATION_THRESHOLD = 5  # consecutive non-improvements before nudge
+STAGNATION_THRESHOLD = 3  # consecutive non-improvements before nudge
 MAX_HISTORY_IN_PROMPT = 20  # only show last N iterations in prompt
 MAX_CONSECUTIVE_CRASHES = 3  # after N crashes with same pattern, force new direction
 
@@ -227,11 +227,11 @@ def summarize_tried_directions(iterations):
 
     summary = []
     if unique_crashes:
-        summary.append("**Approaches that CRASHED** (do not repeat these):")
+        summary.append("**Approaches that CRASHED** — understand WHY and fix the root cause if you want to try something similar:")
         for d in unique_crashes[-10:]:  # last 10 unique crashes
             summary.append(f"- {d}")
     if successful_descs:
-        summary.append("\n**Approaches that ran but did NOT improve** (try something different):")
+        summary.append("\n**Approaches that ran but did NOT improve** — try something meaningfully different:")
         for d in successful_descs[-8:]:  # last 8
             summary.append(f"- {d}")
     return "\n".join(summary)
@@ -346,11 +346,11 @@ def build_prompt(program_md, prepare_py_summary, best_train_py, results,
             parts.append("You have been stuck for a LONG time. Make a BOLD change you haven't tried yet. ")
             parts.append("Consider: very different model depth/width ratios, different batch sizes (2x or 0.5x), ")
             parts.append("different warmdown ratios, or significantly different learning rates. ")
+            parts.append("If a previous direction crashed, diagnose the root cause and try a corrected version of it. ")
         else:
             parts.append("Try a significantly different hyperparameter configuration: ")
             parts.append("different learning rates, batch size, depth, width, or warmdown ratio. ")
-        parts.append("Do NOT try to simplify or remove architecture components — that always causes crashes. ")
-        parts.append("Keep the same architecture but change the numbers.\n\n")
+        parts.append("\n\n")
 
     parts.append("Now propose your next experiment. Start with 'Changes:' followed by a 1-2 sentence description, "
                  "then the COMPLETE train.py in a ```python code block. "
@@ -489,6 +489,7 @@ def main():
     best_val_bpb = baseline_entry["val_bpb"]
     last_error = None
     consecutive_non_improvements = 0
+    consecutive_crashes = 0
 
     for iteration in range(1, MAX_ITERATIONS + 1):
         log(f"--- Iteration {iteration}/{MAX_ITERATIONS} ---")
@@ -541,6 +542,7 @@ def main():
                          "You MUST include the COMPLETE train.py inside a ```python code block. "
                          "Do not use any other format.")
             consecutive_non_improvements += 1
+            consecutive_crashes += 1
             continue
 
         # Syntax check
@@ -560,6 +562,7 @@ def main():
             save_results(results)
             last_error = f"Your code had a syntax error:\n{syntax_err}\nPlease output the COMPLETE, valid train.py file."
             consecutive_non_improvements += 1
+            consecutive_crashes += 1
             continue
 
         # Run training
@@ -581,12 +584,22 @@ def main():
             save_results(results)
             # Revert to best
             write_file(TRAIN_PY_PATH, best_train_py)
-            last_error = run_result["error"]
+            consecutive_crashes += 1
             consecutive_non_improvements += 1
+            if consecutive_crashes >= MAX_CONSECUTIVE_CRASHES:
+                log(f"WARNING: {consecutive_crashes} consecutive crashes — forcing direction change in prompt")
+                last_error = (run_result["error"] +
+                              f"\n\nYou have crashed {consecutive_crashes} times in a row. "
+                              "STOP repeating the same approach. Try something completely different: "
+                              "change the model architecture style, batch size, or learning rate schedule entirely.")
+                consecutive_crashes = 0  # reset so we get a fresh window
+            else:
+                last_error = run_result["error"]
             continue
 
         val_bpb = run_result["metrics"]["val_bpb"]
         peak_vram_mb = run_result["metrics"].get("peak_vram_mb", 0)
+        consecutive_crashes = 0  # successful run resets crash streak
 
         # Decision: keep or discard
         if val_bpb < best_val_bpb:
