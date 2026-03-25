@@ -31,7 +31,7 @@ GPU_MEMORY_UTILIZATION = 0.90  # dedicated GPU — use most of it
 MAX_ITERATIONS = 200
 TRAINING_TIMEOUT = 600  # 10 minutes
 MAX_MODEL_LEN = 65536   # larger context — dedicated GPU has plenty of room
-MAX_OUTPUT_TOKENS = 4096   # train.py is ~2K tokens; 4K is plenty and keeps generation fast
+MAX_OUTPUT_TOKENS = 10000  # train.py is ~8K tokens; need enough room for the full file
 TEMPERATURE = 0.7
 STAGNATION_THRESHOLD = 3  # consecutive non-improvements before nudge
 MAX_HISTORY_IN_PROMPT = 20  # only show last N iterations in prompt
@@ -432,7 +432,7 @@ def main():
         max_model_len=MAX_MODEL_LEN,
         dtype="auto",
         trust_remote_code=True,
-        enforce_eager=True,  # avoid DeltaNet compilation issues with Qwen3.5
+        enforce_eager=True,  # required: CUDA graphs fail for Qwen3.5 DeltaNet on this vLLM version
     )
     sampling_params = SamplingParams(
         max_tokens=MAX_OUTPUT_TOKENS,
