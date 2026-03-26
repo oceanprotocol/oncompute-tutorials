@@ -22,7 +22,7 @@ AGENT_MODEL = "Qwen/Qwen3-14B"
 GPU_MEMORY_UTILIZATION = 0.25  # ~35GB for LLM weights+KV cache, rest for training
 MAX_ITERATIONS = 200
 TRAINING_TIMEOUT = 600  # 10 minutes
-MAX_MODEL_LEN = 40960
+MAX_MODEL_LEN = 32000
 MAX_OUTPUT_TOKENS = 16384  # max tokens for LLM output (enough for full train.py)
 TEMPERATURE = 0.7
 STAGNATION_THRESHOLD = 3  # consecutive non-improvements before nudge
@@ -419,6 +419,7 @@ def main():
         max_model_len=MAX_MODEL_LEN,
         dtype="auto",
         trust_remote_code=True,
+        enforce_eager=True,  # required: torch.compile incompatibility in this vLLM version
     )
     sampling_params = SamplingParams(
         max_tokens=MAX_OUTPUT_TOKENS,
