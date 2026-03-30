@@ -98,8 +98,17 @@ The first three runs used the single-GPU setup (Qwen3-32B-AWQ on one H200). The 
 - **77 iterations** over ~12 hours, 38 successful runs (51% crash rate)
 - Key improvements: model depth (more layers), concentrated in the second half of the run
 
+### Qwen3-14B - 1xH200, ~12 Hours
+
+![Qwen3-14B progress](assets/images/qwen3-14B_progress.png)
+
+- **Baseline**: 1.0268 val_bpb
+- **Best**: 0.9967 val_pbp (2.9% improvement)
+- **165 iterations** over ~12 hours, 72 successful runs (56% crash rate)
+- Key improvements: model depth
+
 ### Takeaway
 
 Lower temperature (0.5 vs 0.7) reduces the crash rate (62-74% vs 86%) but produces significantly worse results. The more "creative" 0.7 temperature generates more broken code, but the successful mutations are bolder and lead to real architectural improvements (e.g. deeper models). At 0.5 temp the agent plays it safe, converges early to ~1.007 val_bpb, and stalls — even with 12 hours of compute it can't match what 0.7 temp achieved in 5.5 hours.
 
-Switching from the quantized Qwen3-32B-AWQ (single GPU) to the full Qwen3.5-27B (2×H200) didn't help — the larger model ran fewer experiments in the same time (77 vs 201), had a lower crash rate (51% vs 86%), but couldn't beat the 0.9818 val_bpb that Qwen3-32B at 0.7 temp reached. The reduced throughput likely offset any quality gains from the stronger model.
+Switching from the quantized Qwen3-32B-AWQ (single GPU) to the full Qwen3.5-27B (2×H200) didn't help — the larger model ran fewer experiments in the same time (77 vs 201), had a lower crash rate (51% vs 86%), but couldn't beat the 0.9818 val_bpb that Qwen3-32B at 0.7 temp reached. The reduced throughput likely offset any quality gains from the stronger model. Percentage wise the smallest model (Qwen3-14B) managed to perform the best, due to it's short iteration time.

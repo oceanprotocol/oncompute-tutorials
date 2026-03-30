@@ -13,6 +13,7 @@ dependencies = [
     "torch==2.9.1",
     "vllm",
     "huggingface-hub",
+    "matplotlib"
 ]
 
 [tool.uv.sources]
@@ -24,3 +25,8 @@ torch = [
 name = "pytorch-cu128"
 url = "https://download.pytorch.org/whl/cu128"
 explicit = true
+
+[tool.uv.workspace]
+members = [
+    "autoresearch",
+]
