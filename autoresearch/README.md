@@ -60,7 +60,7 @@ python plot_progress.py path/to/results.json progress.png
 
 ## Results
 
-The first three runs used the single-GPU setup (Qwen3-32B-AWQ on one H200). The last run used the 2×H200 setup with Qwen3.5-27B.
+The first three runs used the single-GPU setup (Qwen3-32B-AWQ on one H200). The last two runs are the 2×H200 setup with Qwen3.5-27B and the 1xH200 setup with Qwen3-14B.
 
 ### Qwen3-32B-AWQ — 0.7 Temperature (First Run)
 
