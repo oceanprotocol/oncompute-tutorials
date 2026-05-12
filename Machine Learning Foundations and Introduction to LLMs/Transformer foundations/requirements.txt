@@ -60,7 +60,7 @@ torchaudio==2.8.0
 torchvision==0.23.0
 tqdm==4.67.3
 traitlets==5.14.3
-transformers==4.40.0
+transformers==5.0.0rc3
 typing_extensions==4.15.0
 tzdata==2026.1
 urllib3==1.26.20
