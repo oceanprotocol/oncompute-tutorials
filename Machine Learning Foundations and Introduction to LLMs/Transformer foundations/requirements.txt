@@ -32,7 +32,7 @@ packaging==26.1
 pandas==2.3.3
 parso==0.8.6
 pexpect==4.9.0
-pillow==11.3.0
+pillow==12.2.0
 prompt_toolkit==3.0.52
 protobuf==6.33.6
 ptyprocess==0.7.0
