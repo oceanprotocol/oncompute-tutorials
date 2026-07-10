@@ -1,0 +1,12 @@
+# Mirrors pyproject.toml / Dockerfile. torch comes from the cu128 index:
+#   pip install torch==2.9.1 --index-url https://download.pytorch.org/whl/cu128
+torch==2.9.1
+vllm>=0.17.0
+kernels>=0.11.7
+rustbpe>=0.1.0
+tiktoken>=0.11.0
+pyarrow>=21.0.0
+huggingface-hub
+requests>=2.32.0
+numpy>=2.2.6
+matplotlib

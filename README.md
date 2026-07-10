@@ -36,7 +36,7 @@ This repository demonstrates how to execute algorithms on datasets without expos
 
 Walks through the four foundational steps of EDA — type inspection, descriptive statistics, distribution analysis, and correlation — applied to a corporate financial dataset of 500 firms across multiple industries and countries. The dataset is intentionally messy (missing R&D values, skewed revenues, extreme outliers) to reflect real-world conditions.
 
-**Files:** `eda.py`, `eda.md`, `corporate_financial_data.csv`
+**Files:** `algo.py`, `README.md`, `Dockerfile`, `requirements.txt`, `corporate_financial_data.csv`
 
 ---
 
@@ -44,7 +44,7 @@ Walks through the four foundational steps of EDA — type inspection, descriptiv
 
 Covers the full preparation pipeline a practitioner encounters before modelling: cleaning inconsistencies and errors, handling missing values, engineering features into algorithm-ready form, and reducing dimensionality. Applied to a multi-source employee dataset with messy string fields, duplicate rows, and misaligned joins.
 
-**Files:** `cleaning.py`, `cleaning.md`, sample CSV files
+**Files:** `algo.py`, `README.md`, `Dockerfile`, `requirements.txt`, sample CSV files
 
 ---
 
@@ -54,7 +54,7 @@ Covers the full preparation pipeline a practitioner encounters before modelling:
 
 Comprehensive reference and tutorial covering the major clustering paradigms — centroid-based (k-Means, k-Means++), hierarchical (agglomerative with Ward/complete/average/single linkage), density-based (DBSCAN, HDBSCAN), BIRCH, and Affinity Propagation — alongside internal and external evaluation metrics (Silhouette, Davies-Bouldin, Calinski-Harabasz, ARI). The companion script runs all algorithms on the Wine dataset and generates visualizations.
 
-**Files:** `clustering.py`, `README.md`, `Dockerfile`, `requirements.txt`
+**Files:** `algo.py`, `README.md`, `Dockerfile`, `requirements.txt`
 
 ---
 
@@ -64,7 +64,7 @@ Deep-dive into the Transformer architecture (Vaswani et al., 2017): QKV attentio
 
 The companion script runs three interactive labs — tokenization, attention visualization, and embedding clusters — and generates BertViz HTML visualizations.
 
-**Files:** `transformer_foundations.py`, `README.md`, `Dockerfile`, `requirements.txt`
+**Files:** `algo.py`, `README.md`, `Dockerfile`, `requirements.txt`
 
 ---
 
@@ -82,7 +82,7 @@ Reference guide covering tokenization mechanics, padding strategies, model selec
 
 Covers fine-tuning encoder-only transformer models (BERT family). Explains bidirectional self-attention, sequence-level and token-level classification heads, multi-task learning, and masked answer prediction. Includes PyTorch Lightning training setup with PEFT support.
 
-**Files:** `encoder_finetuning.py`, `README.md`, `Dockerfile`
+**Files:** `algo.py`, `README.md`, `Dockerfile`, `requirements.txt`
 
 ---
 
@@ -90,7 +90,7 @@ Covers fine-tuning encoder-only transformer models (BERT family). Explains bidir
 
 Covers fine-tuning decoder-only LLMs. Explains the autoregressive architecture, causal masking, cross-entropy loss over completion tokens (prompt masking), and Parameter-Efficient Fine-Tuning (PEFT) with LoRA — enabling adaptation of billion-parameter models on consumer hardware.
 
-**Files:** `decoder_finetuning.py`, `README.md`, `Dockerfile`
+**Files:** `algo.py`, `README.md`, `Dockerfile`, `requirements.txt`
 
 ---
 

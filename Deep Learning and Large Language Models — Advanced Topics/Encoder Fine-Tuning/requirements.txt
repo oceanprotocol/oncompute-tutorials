@@ -1,0 +1,8 @@
+torch>=2.4.0
+lightning>=2.4.0
+transformers>=4.48.0
+datasets>=3.0.0
+scikit-learn>=1.4.0
+numpy>=1.26.0
+pandas>=2.0.0
+wandb>=0.17.0

@@ -461,14 +461,15 @@ pip install protobuf
 
 ```bash
 # Run entirely (inside the virtual environment)
-python transformer_foundations.py
+python algo.py
 
 # Or run individual sections
-python transformer_foundations.py --lab 1   # Tokenization
-python transformer_foundations.py --lab 2   # Attention
-python transformer_foundations.py --lab 3   # Embeddings
+python algo.py --lab 1   # Tokenization
+python algo.py --lab 2   # Attention
+python algo.py --lab 3   # Embeddings
 
-# Attention visualizations are generated in the following html files:
+# Attention visualizations are generated in the following html files
+# (written to /data/outputs/ on an Ocean node, or the current dir locally):
 per-head_attention.html
 all-layers_heads_overview.html
 ```

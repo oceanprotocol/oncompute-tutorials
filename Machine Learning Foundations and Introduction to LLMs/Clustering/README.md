@@ -398,7 +398,7 @@ Convergence is detected when the exemplar assignments remain stable for a set nu
 
 ## Tutorial
 
-The companion script `clustering.py` demonstrates the full pipeline on the **Wine dataset** (UCI Machine Learning Repository, available in scikit-learn). The dataset contains 178 samples of Italian wines from 3 cultivars, described by 13 chemical features. It provides a natural 3-cluster structure that is well-separated but not trivially separable — a good benchmark.
+The companion script `algo.py` demonstrates the full pipeline on the **Wine dataset** (UCI Machine Learning Repository, available in scikit-learn). The dataset contains 178 samples of Italian wines from 3 cultivars, described by 13 chemical features. It provides a natural 3-cluster structure that is well-separated but not trivially separable — a good benchmark.
 
 ### Pipeline
 
@@ -411,12 +411,12 @@ The companion script `clustering.py` demonstrates the full pipeline on the **Win
    - Silhouette coefficient plots per algorithm
    - Truncated dendrogram (Ward linkage)
 
-All plots are saved to `./outputs/clustering/`.
+All plots are saved to `/data/outputs/` when running on an Ocean node (returned to you when the job finishes), or to `./outputs/clustering/` when running locally.
 
 ### Running
 
 ```bash
-python clustering.py
+python algo.py
 ```
 
 ---
@@ -424,21 +424,16 @@ python clustering.py
 ## Dockerfile
 
 ```
-FROM ubuntu:24.04
+FROM python:3.12-slim
 
-RUN apt-get update && \
-    apt-get install -y \
-    python3-pip \
-    python3-venv \
-    && apt-get clean
-
-RUN python3 -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
+ENV HOME=/tmp \
+    MPLCONFIGDIR=/tmp/mplconfig
 
 COPY requirements.txt /tmp/
-RUN pip install --upgrade pip wheel
-RUN pip install -r /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
 ```
+
+The algorithm (`algo.py`) is injected by the Ocean node at runtime — the image only provides the Python environment.
 
 ## Requirements
 

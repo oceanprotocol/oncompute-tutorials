@@ -451,7 +451,12 @@ def main():
     AP_DAMPING = 0.9
 
     # Output
-    OUTPUT_DIR = "./outputs/clustering"
+    # On an Ocean node, /data/outputs is tarred and returned to the user;
+    # fall back to a local dir when running outside the node.
+    # Override with the OUTPUTS env var.
+    OUTPUT_DIR = os.environ.get(
+        "OUTPUTS", "/data/outputs" if os.path.isdir("/data") else "./outputs/clustering"
+    )
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     # -------------------------

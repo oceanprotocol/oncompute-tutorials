@@ -1,6 +1,12 @@
 import argparse
+import os
 import sys
 import textwrap
+
+# On an Ocean node, /data/outputs is tarred and returned to the user; fall back
+# to the current dir when running locally. Override with the OUTPUTS env var.
+OUTPUT_DIR = os.environ.get("OUTPUTS", "/data/outputs" if os.path.isdir("/data") else ".")
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # Check that packages are importable
 
@@ -330,12 +336,14 @@ def lab2_attention():
     head_html = head_view(outputs.attentions, tokens, html_action='return')    # per-head attention view
     model_html = model_view(outputs.attentions, tokens, html_action='return')   # all layers / heads overview
 
-    with open("per-head_attention.html", "w") as f:
+    head_path = os.path.join(OUTPUT_DIR, "per-head_attention.html")
+    model_path = os.path.join(OUTPUT_DIR, "all-layers_heads_overview.html")
+    with open(head_path, "w") as f:
         f.write(head_html.data)
-        print("Open per-head_attention.html for per-head attention view")
-    with open("all-layers_heads_overview.html", "w") as f:
+        print(f"Open {head_path} for per-head attention view")
+    with open(model_path, "w") as f:
         f.write(model_html.data)
-        print("Open all-layers_heads_overview.html for all layers / heads overview")
+        print(f"Open {model_path} for all layers / heads overview")
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -582,9 +590,10 @@ def lab3_embeddings():
         ax.set_title("BERT Static Embeddings — PCA Projection")
         ax.legend()
         plt.tight_layout()
-        plt.savefig("embedding_clusters.png", dpi=150)
+        out_path = os.path.join(OUTPUT_DIR, "embedding_clusters.png")
+        plt.savefig(out_path, dpi=150)
         plt.show()
-        print("Saved to embedding_clusters.png")
+        print(f"Saved to {out_path}")
     
     plot_pca_embeddings(coords_2d, words_flat, labels_flat)
 

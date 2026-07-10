@@ -1,15 +1,17 @@
-# Slim Python base: python + pip preinstalled, no apt/toolchain install.
-# All deps below ship as prebuilt manylinux wheels → fast build, fits the
-# free compute env's short maxJobDuration (build + run share that budget).
+# Slim Python base. torch and bitsandbytes wheels bundle the CUDA runtime
+# (nvidia-* pip packages), so GPU support comes from pip — the node's container
+# runtime injects the driver. No apt/toolchain install needed.
 # NOTE: no WORKDIR. The node runs the algorithm via the RELATIVE path
 # `data/transformations/algorithm`, so the working dir must stay `/`
 # (python:slim default) for it to resolve to /data/transformations/algorithm.
 FROM python:3.12-slim
 
-# The node runs the container with a non-writable HOME (/), which breaks
-# matplotlib's config dir. Point HOME and the config cache at world-writable /tmp.
+# The node runs the container with a non-writable HOME (/), which breaks the
+# Hugging Face model/dataset cache and wandb's local dirs. Point HOME and the
+# caches at world-writable /tmp.
 ENV HOME=/tmp \
-    MPLCONFIGDIR=/tmp/mplconfig
+    HF_HOME=/tmp/hf \
+    WANDB_DIR=/tmp/wandb
 
 COPY requirements.txt /tmp/
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
